@@ -7,7 +7,7 @@
 */
 #jeopardy {
   text-align: center;
-  font-size: 10pt;
+  font-size: 12pt;
   background-color: #060ce9;
   color: white;
 }
@@ -27,5 +27,5 @@
 th {
   text-transform: uppercase;
   font-weight: bold;
-  height: 4em;
+  height: 5em;
 }
