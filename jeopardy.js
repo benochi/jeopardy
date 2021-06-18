@@ -39,7 +39,7 @@ async function randomArray(arr, num) {  //should return a random array from an a
 
 async function getCategoryIds() {
     const response = await axios.get("https://jservice.io/api/categories?count=100");
-    const categoryIds = response.data.map(category => category.id);
+    const categoryIds = await response.data.map(category => category.id);
     return randomArray(categoryIds, 6);
 }
 
@@ -59,7 +59,7 @@ async function getCategory(catId) {
     const response = await axios.get('https://jservice.io/api/categories', { params: { id: `${catId}` } });
     const category = response.data;
     const question = category.clues;
-    const randomQuestions = randomArray(question, questions);
+    const randomQuestions = await randomArray(question, questions);
     const gameQuestions = randomQuestions.map(cat => ({
         question: cat.question,
         answer: cat.answer,
@@ -104,7 +104,7 @@ function handleClick(evt) {
     const id = evt.target.id;
     const [categoryId, questionId] = id.split('-');
     const question = categories[categoryId].questions[questionId];
-    const text;
+    let text;
 
     if (!question.showing) { //if currently null, show question & set .showing to "question"
       text = question.question;
@@ -151,7 +151,7 @@ async function setupAndStart() {
 }
 
 /** On click of start / restart button, set up game. */
-$("#restart'").on("click", setupAndStart);
+$("#restart").on("click", setupAndStart);
 
 
 /** On page load, add event handler for clicking clues */
