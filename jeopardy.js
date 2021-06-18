@@ -22,7 +22,7 @@ let categories = [];
 const categoryNum = 6;
 const questions = 5;
 
-async function randomArray(arr, num) {  //should return a random array from an array of any length, the length = num
+/* function randomArray(arr, num) {  //should return a random array from an array of any length, the length = num
     let randomArr =[];
 
     for ( let i = 0; i < num; i++) {
@@ -30,7 +30,7 @@ async function randomArray(arr, num) {  //should return a random array from an a
         randomArr.push(tempArr);
     }
     return randomArr;
-}
+}*/
 
 /** Get NUM_CATEGORIES random category from API.
  *
@@ -40,7 +40,14 @@ async function randomArray(arr, num) {  //should return a random array from an a
 async function getCategoryIds() {
     const response = await axios.get("https://jservice.io/api/categories?count=100");
     const categoryIds = await response.data.map(category => category.id);
-    return randomArray(categoryIds, 6);
+    let randomArr =[];
+
+    for ( let i = 0; i < 6; i++) {
+        let tempArr = categoryIds[Math.floor(Math.random()*categoryIds.length)];
+        randomArr.push(tempArr);
+    }
+    return randomArr;
+    // return randomArray(categoryIds, 6);
 }
 
 /** Return object with data about a category:
@@ -59,7 +66,14 @@ async function getCategory(catId) {
     const response = await axios.get('https://jservice.io/api/categories', { params: { id: `${catId}` } });
     const category = response.data;
     const question = category.clues;
-    const randomQuestions = await randomArray(question, questions);
+    let newArr = [];
+    for ( let i = 0; i < 5; i++) {
+        let tempArr = await question[Math.floor(Math.random()*question.length)];
+        newArr.push(tempArr);
+    }
+    const randomQuestions = newArr;
+    //const randomQuestions = await randomArray(question, 5);
+    
     const gameQuestions = randomQuestions.map(cat => ({
         question: cat.question,
         answer: cat.answer,
@@ -100,7 +114,7 @@ async function fillTable() { //launch at start
  
  * */
 
-function handleClick(evt) {
+async function handleClick(evt) {
     const id = evt.target.id;
     const [categoryId, questionId] = id.split('-');
     const question = categories[categoryId].questions[questionId];
@@ -120,19 +134,6 @@ function handleClick(evt) {
     $(`#${catId}-${clueId}`).html(msg);
 }
 
-/** Wipe the current Jeopardy board, show the loading spinner,
- * and update the button used to fetch data.
- */
-
-function showLoadingView() {
-
-}
-
-/** Remove the loading spinner and update the button used to fetch data. */
-
-function hideLoadingView() {
-
-}
 
 /** Start game:
  *
@@ -155,8 +156,7 @@ $("#restart").on("click", setupAndStart);
 
 
 /** On page load, add event handler for clicking clues */
-$(async function(){
+(async function(){  //wont work as async function(){} ? MDN calls this an IIFE? 
     setupAndStart();
     $("#jeopardy").on('click', handleClick)
-    
 });
