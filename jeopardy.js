@@ -68,7 +68,7 @@ async function getCategory(catId) {
     const question = category.clues;
     let newArr = [];
     for ( let i = 0; i < 5; i++) {
-        let tempArr = await question[Math.floor(Math.random()*question.length)];
+        let tempArr = question[Math.floor(Math.random()*question.length)];
         newArr.push(tempArr);
     }
     const randomQuestions = newArr;
