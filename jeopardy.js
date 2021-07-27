@@ -18,9 +18,10 @@
 //    ...
 //  ]
 
-let categories = [];
+
 const categoryNum = 6;
 const questions = 5;
+let categories = [];
 
 /* function randomArray(arr, num) {  //should return a random array from an array of any length, the length = num
     let randomArr =[];
@@ -38,16 +39,11 @@ const questions = 5;
  */
 
 async function getCategoryIds() {
-    const response = await axios.get("https://jservice.io/api/categories?count=100");
-    const categoryIds = await response.data.map(category => category.id);
-    let randomArr =[];
-
-    for ( let i = 0; i < 6; i++) {
-        let tempArr = categoryIds[Math.floor(Math.random()*categoryIds.length)];
-        randomArr.push(tempArr);
-    }
-    return randomArr;
-    // return randomArray(categoryIds, 6);
+    //ask for maximum categorys to randomly pick from
+    const response = await axios.get(`https://jservice.io/api/categories?count=100`);
+    const catIds = response.data.map(c => c.id);
+    // return random categories(categoryIds, 6);
+    return _.sampleSize(catIds, categoryNum);
 }
 
 /** Return object with data about a category:
@@ -63,23 +59,17 @@ async function getCategoryIds() {
  */
 
 async function getCategory(catId) {
-    const response = await axios.get('https://jservice.io/api/categories', { params: { id: `${catId}` } });
-    const category = response.data;
-    const question = category.clues;
-    let newArr = [];
-    for ( let i = 0; i < 5; i++) {
-        let tempArr = question[Math.floor(Math.random()*question.length)];
-        newArr.push(tempArr);
-    }
-    const randomQuestions = newArr;
-    //const randomQuestions = await randomArray(question, 5);
-    
-    const gameQuestions = randomQuestions.map(cat => ({
-        question: cat.question,
-        answer: cat.answer,
+    let response = await axios.get(`https://jservice.io/api/category?id=${catId}`);
+    let category = response.data;
+    let question = category.clues;
+    let randomQuestions = _.sampleSize(question, questions);
+    //const randomQuestions = await randomArray(question, 5);    
+    let gameQuestions = randomQuestions.map(c => ({
+        question: c.question,
+        answer: c.answer,
         showing: null
     }));
-    return { title: category.title, clues: gameQuestions };
+    return { title: category.title, gameQuestions };
 };
 
 /** Fill the HTML table#jeopardy with the categories & cells for questions.
@@ -90,22 +80,25 @@ async function getCategory(catId) {
  *   (initally, just show a "?" where the question/answer would go.)
  */
 
-async function fillTable() { //launch at start
-    $("jeopardy thead").empty();
-    const $tr = $('<tr>'); //creates table row for thead for titles
-    for(let i = 0; i < categoryNum; i++){ //iterate over the 6 categories. 
-        $tr.append($("<th>").text(categories[i].title)); //titles each TH using category array
+ async function fillTable() {
+    // Add row with headers for categories
+    $("#jeopardy thead").empty();
+    let $tr = $("<tr>");
+    for (let catIdx = 0; catIdx < categoryNum; catIdx++) {
+      $tr.append($("<th>").text(categories[catIdx].title));
     }
     $("#jeopardy thead").append($tr);
-    $("#jeopardy tbody").empty();  //resets table at start
-    for(let y = 0; y < questions; y++) {
-        let $tr = $("<tr>");
-        for(let x =0; x < catergoyNum; x++){
-            $tr.append($("<td>").attr("id", `${x}-${y}`).text("?"));  //gives cell an ID attribute and makesthe text a question mark. 
-        }
+  
+    // Add rows with questions for each category
+    $("#jeopardy tbody").empty();
+    for (let clueIdx = 0; clueIdx < questions; clueIdx++) {
+      let $tr = $("<tr>");
+      for (let catIdx = 0; catIdx < categoryNum; catIdx++) {
+        $tr.append($("<td>").attr("id", `${catIdx}-${clueIdx}`).text("?"));
+      }
+      $("#jeopardy tbody").append($tr);
     }
-
-}
+  }
 
 /** Handle clicking on a clue: show the question or answer.
  *
@@ -114,25 +107,27 @@ async function fillTable() { //launch at start
  
  * */
 
-async function handleClick(evt) {
-    const id = evt.target.id;
-    const [categoryId, questionId] = id.split('-');
-    const question = categories[categoryId].questions[questionId];
-    let text;
-
-    if (!question.showing) { //if currently null, show question & set .showing to "question"
-      text = question.question;
-      question.showing = "question"; //Uses .showing property on clue to determine what to show:
-    } else if (question.showing === "question") {
-      text = question.answer;
-      question.showing = "answer";
-    } else { //* - if currently "answer", ignore click
+ function handleClick(evt) {
+    let id = evt.target.id;
+    let [catId, clueId] = id.split("-");
+    let clue = categories[catId].clues[clueId];
+  
+    let msg;
+  
+    if (!clue.showing) {
+      msg = clue.question;
+      clue.showing = "question";
+    } else if (clue.showing === "question") {
+      msg = clue.answer;
+      clue.showing = "answer";
+    } else {
+      // already showing answer; ignore
       return
     }
   
     // Update text of cell
     $(`#${catId}-${clueId}`).html(msg);
-}
+  }
 
 
 /** Start game:
@@ -142,21 +137,21 @@ async function handleClick(evt) {
  * - create HTML table
  * */
 
-async function setupAndStart() {
+ async function setupAndStart() {
     const response = await getCategoryIds();
-    categories=[];
-    for(let i = 0; i < response.length; i++) {
-        categories.push(await getCategory(response));
+    categories = [];
+    for (let i = 0; i < response.length; i++) {
+      categories.push(await getCategory(response));
     }
     fillTable();
-}
+  }
 
 /** On click of start / restart button, set up game. */
 $("#restart").on("click", setupAndStart);
 
 
 /** On page load, add event handler for clicking clues */
-(async function(){  //wont work as async function(){} ? MDN calls this an IIFE? 
+$(async function () {
     setupAndStart();
-    $("#jeopardy").on('click', handleClick)
+    $("#jeopardy").on("click", handleClick);
 });
